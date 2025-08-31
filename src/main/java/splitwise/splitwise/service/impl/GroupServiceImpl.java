@@ -1,20 +1,40 @@
 package splitwise.splitwise.service.impl;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import splitwise.splitwise.dto.GroupDetailsResponse;
-import splitwise.splitwise.dto.GroupMemberDTO;
-import splitwise.splitwise.exception.*;
-import splitwise.splitwise.model.*;
-import splitwise.splitwise.repository.*;
-import splitwise.splitwise.service.ExpenseService;
-import splitwise.splitwise.service.GroupService;
-
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import splitwise.splitwise.dto.GroupDetailsResponse;
+import splitwise.splitwise.dto.GroupMemberDTO;
+import splitwise.splitwise.exception.GroupHasPendingDuesException;
+import splitwise.splitwise.exception.GroupNotFound;
+import splitwise.splitwise.exception.NoGroupFoundException;
+import splitwise.splitwise.exception.UserAlreadyExists;
+import splitwise.splitwise.exception.UserNotFound;
+import splitwise.splitwise.exception.UserNotInGroup;
+import splitwise.splitwise.exception.UserWithPendingDues;
+import splitwise.splitwise.model.Expense;
+import splitwise.splitwise.model.ExpenseGroup;
+import splitwise.splitwise.model.ExpenseSplit;
+import splitwise.splitwise.model.GroupMember;
+import splitwise.splitwise.model.GroupMemberId;
+import splitwise.splitwise.model.Settlement;
+import splitwise.splitwise.model.User;
+import splitwise.splitwise.repository.ExpenseGroupRepository;
+import splitwise.splitwise.repository.ExpenseRepository;
+import splitwise.splitwise.repository.ExpenseSplitRepository;
+import splitwise.splitwise.repository.GroupMemberRepository;
+import splitwise.splitwise.repository.SettlementRepository;
+import splitwise.splitwise.repository.UserRepository;
+import splitwise.splitwise.service.ExpenseService;
+import splitwise.splitwise.service.GroupService;
+
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class GroupServiceImpl implements GroupService {
 
@@ -30,6 +50,7 @@ public class GroupServiceImpl implements GroupService {
     @Transactional
     @Override
     public ExpenseGroup createGroup(String groupname, List<Long> userIds){
+        log.info("Creating group: name={}, initialMembers={}", groupname, userIds.size());
         ExpenseGroup group = new ExpenseGroup();
         group.setGroupname(groupname);
         group = groupRepository.save(group);
@@ -46,6 +67,7 @@ public class GroupServiceImpl implements GroupService {
             groupMemberRepository.save(member);
         }
 
+        log.info("Group created: groupId={}, membersAdded={}", group.getGroupid(), userIds.size());
         return group;
     }
 
@@ -53,6 +75,7 @@ public class GroupServiceImpl implements GroupService {
     // get group details
     @Override
     public GroupDetailsResponse getGroup(Long groupid){
+        log.debug("Fetching group details: groupId={}", groupid);
         ExpenseGroup group = groupRepository.findById(groupid)
                 .orElseThrow(()-> new GroupNotFound("Group not found"));
         List<GroupMember> groupMembers = groupMemberRepository.findById_Groupid(groupid);
@@ -79,6 +102,7 @@ public class GroupServiceImpl implements GroupService {
     // add user to existing group
     @Override
     public void addUserToGroup(Long groupid, Long userId){
+        log.info("Adding user to group: groupId={}, userId={}", groupid, userId);
         boolean exists = groupMemberRepository.existsById_GroupidAndId_Userid(groupid, userId);
         ExpenseGroup group = groupRepository.findById(groupid)
                 .orElseThrow(()->new GroupNotFound("Group not found"));
@@ -94,12 +118,14 @@ public class GroupServiceImpl implements GroupService {
         member.setGroup(group);
 
         groupMemberRepository.save(member);
+        log.info("User added to group: groupId={}, userId={}", groupid, userId);
     }
 
 
     @Override
     @Transactional
     public void removeUserFromGroup(Long groupid, Long userId) {
+        log.info("Removing user from group: groupId={}, userId={}", groupid, userId);
         ExpenseGroup group = groupRepository.findById(groupid)
                 .orElseThrow(() -> new GroupNotFound("Group not found"));
 
@@ -117,6 +143,7 @@ public class GroupServiceImpl implements GroupService {
         boolean hasDues = balances.stream()
                 .anyMatch(balance -> balance.contains(user.getUsername()));
         if (hasDues) {
+            log.warn("Cannot remove user from group: groupId={}, userId={}", groupid, userId);
             throw new UserWithPendingDues("Cannot remove user with unsettled balances.");
         }
 
@@ -148,11 +175,13 @@ public class GroupServiceImpl implements GroupService {
 
         // after splits are removed then remove user from group
         groupMemberRepository.deleteById(groupMemberId);
+        log.info("Removed user from group: groupId={}, userId={}", groupid, userId);
     }
 
 
     @Override
     public List<ExpenseGroup> getGroupByUserId(Long userId){
+        log.debug("Fetching groups for userId={}", userId);
         if(!userRepository.existsById(userId)){
             throw new UserNotFound("User not found with ID " +userId);
         }
@@ -172,6 +201,7 @@ public class GroupServiceImpl implements GroupService {
 
     @Override
     public void deleteGroup(Long groupid) {
+        log.info("Deleting group: groupId={}", groupid);
         ExpenseGroup group = groupRepository.findById(groupid)
                 .orElseThrow(() -> new GroupNotFound("Group not found"));
 
@@ -200,6 +230,8 @@ public class GroupServiceImpl implements GroupService {
 
         // Finally delete the group
         groupRepository.deleteById(groupid);
+        log.info("Deleted group: groupId={}", groupid);
+
     }
 
 }

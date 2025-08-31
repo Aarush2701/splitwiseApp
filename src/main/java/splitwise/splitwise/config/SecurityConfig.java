@@ -1,6 +1,7 @@
 package splitwise.splitwise.config;
 
-import lombok.RequiredArgsConstructor;
+import java.util.List;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -16,10 +17,10 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import lombok.RequiredArgsConstructor;
 import splitwise.splitwise.utility.JwtAuthEntryPoint;
 import splitwise.splitwise.utility.JwtAuthenticationFilter;
-
-import java.util.List;
 
 @Configuration
 @EnableWebSecurity

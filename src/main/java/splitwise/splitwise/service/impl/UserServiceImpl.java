@@ -1,23 +1,31 @@
 package splitwise.splitwise.service.impl;
 
-import lombok.RequiredArgsConstructor;
+import java.util.List;
+import java.util.Optional;
+
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import splitwise.splitwise.dto.UserUpdateRequest;
 import splitwise.splitwise.exception.EmailNotFoundException;
 import splitwise.splitwise.exception.UserNotFound;
 import splitwise.splitwise.exception.UserWithPendingDues;
 import splitwise.splitwise.model.GroupMember;
 import splitwise.splitwise.model.User;
-import splitwise.splitwise.repository.*;
+import splitwise.splitwise.repository.ExpenseRepository;
+import splitwise.splitwise.repository.ExpenseSplitRepository;
+import splitwise.splitwise.repository.GroupMemberRepository;
+import splitwise.splitwise.repository.SettlementRepository;
+import splitwise.splitwise.repository.UserRepository;
 import splitwise.splitwise.service.ExpenseService;
 import splitwise.splitwise.service.UserService;
 
-import java.util.List;
-import java.util.Optional;
-
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
@@ -47,18 +55,22 @@ public class UserServiceImpl implements UserService {
     //update user
     @Override
     public User updateUser(Long userId, UserUpdateRequest updateUser) {
+        log.info("Updating user: userId={}", userId);
         User user = userRepository.findById(userId).orElseThrow(() -> new UserNotFound("User not found"));
         user.setUsername(updateUser.getUsername());
         user.setEmail(updateUser.getEmail());
         user.setPhone(updateUser.getPhone());
         user.setPassword(passwordEncoder.encode(updateUser.getPassword()));
 
-        return userRepository.save(user);
+        User saved = userRepository.save(user);
+        log.info("Updated user saved: userId={}", saved.getUserid());
+        return saved;
     }
 
     @Override
     @Transactional
     public void deleteUser(Long userId){
+        log.info("Deleting user: userId={}", userId);
         User user = userRepository.findById(userId)
                 .orElseThrow(()-> new UserNotFound("User not found"));
 
@@ -83,12 +95,14 @@ public class UserServiceImpl implements UserService {
         groupMemberRepository.deleteById_Userid(userId);
 
         userRepository.deleteById(userId);
+        log.info("Deleted user: userId={}", userId);
 
     }
 
     // Get user by ID
     @Override
     public Optional<User> getUserById(Long userId){
+        log.debug("Fetching user by id: userId={}", userId);
         userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFound("user not found"));
         return userRepository.findById(userId);
@@ -96,6 +110,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<Long> resolveUserIds(List<String> emails) {
+        log.debug("Resolving user ids for emails: count={}", emails.size());
         List<User> users = userRepository.findByEmailIn(emails);
 
         List<String> foundEmails = users.stream()
@@ -107,6 +122,7 @@ public class UserServiceImpl implements UserService {
                 .toList();
 
         if (!missingEmails.isEmpty()) {
+            log.warn("Email(s) not found: {}", String.join(", ", missingEmails));
             throw new EmailNotFoundException("Users not found for emails: " + String.join(", ", missingEmails));
         }
 

@@ -1,21 +1,11 @@
 package splitwise.splitwise.service;
 
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import java.util.List;
+
 import splitwise.splitwise.dto.AddExpenseRequest;
 import splitwise.splitwise.dto.ExpenseSplitResponse;
-import splitwise.splitwise.exception.ExpenseNotFound;
-import splitwise.splitwise.exception.GroupNotFound;
-import splitwise.splitwise.exception.UserNotFound;
-import splitwise.splitwise.model.*;
-import splitwise.splitwise.repository.*;
-import splitwise.splitwise.strategy.SplitStrategy;
-import splitwise.splitwise.strategy.SplitStrategyFactory;
-
-import java.util.*;
-import java.util.stream.Collectors;
+import splitwise.splitwise.model.Expense;
 
 
 public interface ExpenseService {

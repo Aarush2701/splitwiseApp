@@ -1,20 +1,9 @@
 package splitwise.splitwise.service;
 
-
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import splitwise.splitwise.dto.UpdateSettlementRequest;
-import splitwise.splitwise.exception.*;
-import splitwise.splitwise.model.ExpenseGroup;
-import splitwise.splitwise.model.Settlement;
-import splitwise.splitwise.model.User;
-import splitwise.splitwise.repository.ExpenseGroupRepository;
-import splitwise.splitwise.repository.SettlementRepository;
-import splitwise.splitwise.repository.UserRepository;
-
-import java.sql.Timestamp;
-import java.time.LocalDateTime;
 import java.util.List;
+
+import splitwise.splitwise.dto.UpdateSettlementRequest;
+import splitwise.splitwise.model.Settlement;
 
 
 public interface SettlementService {

@@ -1,26 +1,39 @@
 package splitwise.splitwise.service.impl;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import splitwise.splitwise.dto.AddExpenseRequest;
-import splitwise.splitwise.dto.ExpenseSplitResponse;
-import splitwise.splitwise.exception.ExpenseNotFound;
-import splitwise.splitwise.exception.GroupNotFound;
-import splitwise.splitwise.exception.UserNotFound;
-import splitwise.splitwise.model.*;
-import splitwise.splitwise.repository.*;
-import splitwise.splitwise.service.ExpenseService;
-import splitwise.splitwise.strategy.SplitStrategy;
-import splitwise.splitwise.strategy.SplitStrategyFactory;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import splitwise.splitwise.dto.AddExpenseRequest;
+import splitwise.splitwise.dto.ExpenseSplitResponse;
+import splitwise.splitwise.exception.ExpenseNotFound;
+import splitwise.splitwise.exception.GroupNotFound;
+import splitwise.splitwise.exception.UserNotFound;
+import splitwise.splitwise.model.Expense;
+import splitwise.splitwise.model.ExpenseGroup;
+import splitwise.splitwise.model.ExpenseSplit;
+import splitwise.splitwise.model.Settlement;
+import splitwise.splitwise.model.User;
+import splitwise.splitwise.repository.ExpenseGroupRepository;
+import splitwise.splitwise.repository.ExpenseRepository;
+import splitwise.splitwise.repository.ExpenseSplitRepository;
+import splitwise.splitwise.repository.GroupMemberRepository;
+import splitwise.splitwise.repository.SettlementRepository;
+import splitwise.splitwise.repository.UserRepository;
+import splitwise.splitwise.service.ExpenseService;
+import splitwise.splitwise.strategy.SplitStrategy;
+import splitwise.splitwise.strategy.SplitStrategyFactory;
+
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class ExpenseServiceImpl implements ExpenseService {
     private final ExpenseRepository expenseRepository;
@@ -32,11 +45,13 @@ public class ExpenseServiceImpl implements ExpenseService {
     private final GroupMemberRepository groupMemberRepository;
 
 
+
     // Add and split expense based on the strategy among group members
 
     @Override
     @Transactional
     public Expense addExpense(Long groupid, AddExpenseRequest request) {
+        log.info("Adding expense: groupId={}, amount={}, paidBy={}, participants={}", groupid, request.getAmount(), request.getPaidBy(), request.getParticipants().size());
         ExpenseGroup group = groupRepository.findById(groupid)
                 .orElseThrow(() -> new GroupNotFound("Group not found"));
         User payer = userRepository.findById(request.getPaidBy())
@@ -64,6 +79,7 @@ public class ExpenseServiceImpl implements ExpenseService {
         expense.setExpensedate(new java.sql.Timestamp(System.currentTimeMillis()));
 
         Expense savedExpense = expenseRepository.save(expense);
+        log.debug("Saved expense with id={}", savedExpense.getExpenseid());
 
         // strategy call
         SplitStrategy strategy = splitStrategyFactory.getStrategy(request.getSplitType());
@@ -75,6 +91,7 @@ public class ExpenseServiceImpl implements ExpenseService {
         );
 
         splitRepository.saveAll(splits);
+        log.info("Expense added and splits saved: expenseId={}, splitsCount={}", savedExpense.getExpenseid(), splits.size());
 
         return savedExpense;
     }
@@ -82,6 +99,7 @@ public class ExpenseServiceImpl implements ExpenseService {
     //Get all expenses in a group
     @Override
     public List<Expense> getExpensesByGroup(Long groupid) {
+        log.debug("Fetching expenses for groupId={}", groupid);
         ExpenseGroup group = groupRepository.findById(groupid)
                 .orElseThrow(() -> new GroupNotFound("Group not found"));
         return expenseRepository.findByGroupid_Groupid(groupid);
@@ -91,6 +109,7 @@ public class ExpenseServiceImpl implements ExpenseService {
 
     @Override
     public List<Expense> getExpensesByGroupAndUser(Long groupid, Long userid) {
+        log.debug("Fetching expenses for groupId={} by userId={}", groupid, userid);
         ExpenseGroup group = groupRepository.findById(groupid)
                 .orElseThrow(() -> new GroupNotFound("Group not found"));
         User payer = userRepository.findById(userid)
@@ -103,6 +122,7 @@ public class ExpenseServiceImpl implements ExpenseService {
 
     @Override
     public List<String> getBalances(Long groupid) {
+        log.debug("Computing balances for groupId={}", groupid);
         List<Expense> expenses = expenseRepository.findByGroupid_Groupid(groupid);
         List<Settlement> settlements = settlementRepository.findByGroupid_Groupid(groupid);
 
@@ -110,7 +130,9 @@ public class ExpenseServiceImpl implements ExpenseService {
         applySettlements(balanceMap, settlements);
         Map<String, Double> finalBalances = computeNetBalances(balanceMap);
 
-        return balancesFormat(finalBalances);
+        List<String> result = balancesFormat(finalBalances);
+        log.info("Computed balances for groupId={} entries={}", groupid, result.size());
+        return result;
 
     }
     // Step 1: Add dues from splits
@@ -134,6 +156,7 @@ public class ExpenseServiceImpl implements ExpenseService {
 
     // Step 2: Subtract settlements
     public void applySettlements(Map<Long,Map<Long,Double>> balanceMap,List<Settlement> settlements) {
+        log.debug("Applying {} settlements", settlements.size());
         for (Settlement settlement : settlements) {
             Long from = settlement.getPaidby().getUserid();
             Long to = settlement.getPaidto().getUserid();
@@ -223,6 +246,7 @@ public class ExpenseServiceImpl implements ExpenseService {
     // get balance for a specific user in a group (balance controller)
     @Override
     public List<String> getUserBalance(Long groupid, Long userid){
+        log.debug("Computing user balance: groupId={}, userId={}", groupid, userid);
         List<String> allBalances = getBalances(groupid);
         String username = userRepository.findById(userid)
                 .orElseThrow(() -> new UserNotFound("User not found")).getUsername();
@@ -239,6 +263,7 @@ public class ExpenseServiceImpl implements ExpenseService {
     //balance between 2 users
     @Override
     public double getBalanceBetweenUsers(Long groupId , Long user1Id , Long user2Id){
+        log.debug("Computing balance between users: groupId={}, user1Id={}, user2Id={}", groupId, user1Id, user2Id);
         List<String> balances = getBalances(groupId);
 
         String user1Touser2Prefix = getUsername(user1Id) + " owes " + getUsername(user2Id) + " ₹";
@@ -268,6 +293,7 @@ public class ExpenseServiceImpl implements ExpenseService {
     @Override
     @Transactional
     public void deleteExpense(Long groupid,Long expenseid) {
+        log.info("Deleting expense: groupId={}, expenseId={}", groupid, expenseid);
         Expense expense = expenseRepository.findById(expenseid)
                 .orElseThrow(() -> new ExpenseNotFound("Expense not found with ID: "));
 
@@ -276,12 +302,15 @@ public class ExpenseServiceImpl implements ExpenseService {
 
         // Delete the expense
         expenseRepository.delete(expense);
+        log.info("Deleted expense: expenseId={}", expenseid);
+
     }
 
     //update expense
     @Override
     @Transactional
     public Expense updateExpense(Long expenseid, AddExpenseRequest request) {
+        log.info("Updating expense: expenseId={}, amount={}, paidBy={}", expenseid, request.getAmount(), request.getPaidBy());
         Expense existingExpense = expenseRepository.findById(expenseid)
                 .orElseThrow(() -> new ExpenseNotFound("Expense not found"));
 
@@ -314,6 +343,7 @@ public class ExpenseServiceImpl implements ExpenseService {
 
         // Save updated expense
         Expense updatedExpense = expenseRepository.save(existingExpense);
+        log.debug("Updated expense saved: expenseId={}", updatedExpense.getExpenseid());
 
         // Recalculate and save new splits
         SplitStrategy strategy = splitStrategyFactory.getStrategy(request.getSplitType());
@@ -325,12 +355,14 @@ public class ExpenseServiceImpl implements ExpenseService {
         );
 
         splitRepository.saveAll(newSplits);
+        log.info("Updated splits saved: expenseId={}, splitsCount={}", updatedExpense.getExpenseid(), newSplits.size());
 
         return updatedExpense;
     }
 
     @Override
     public Expense getExpenseByGroupAndId(Long groupid, Long expenseid) {
+        log.debug("Fetching expense by id: groupId={}, expenseId={}", groupid, expenseid);
         Expense expense = expenseRepository.findById(expenseid)
                 .orElseThrow(() -> new ExpenseNotFound("Expense not found"));
 
@@ -343,6 +375,7 @@ public class ExpenseServiceImpl implements ExpenseService {
 
     @Override
     public List<ExpenseSplitResponse> getExpenseSplitsByGroupAndExpenseId(Long groupid, Long expenseid) {
+        log.debug("Fetching expense splits: groupId={}, expenseId={}", groupid, expenseid);
         Expense expense = expenseRepository.findById(expenseid)
                 .orElseThrow(() -> new ExpenseNotFound("Expense not found"));
 

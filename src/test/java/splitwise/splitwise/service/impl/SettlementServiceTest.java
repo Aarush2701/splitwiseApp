@@ -1,28 +1,39 @@
 package splitwise.splitwise.service.impl;
 
-import org.hibernate.validator.internal.engine.groups.Group;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import org.mockito.MockitoAnnotations;
+
 import splitwise.splitwise.dto.UpdateSettlementRequest;
-import splitwise.splitwise.exception.*;
+import splitwise.splitwise.exception.GroupNotFound;
+import splitwise.splitwise.exception.NoDuesExist;
+import splitwise.splitwise.exception.PayerAndPayeeSame;
+import splitwise.splitwise.exception.SettleAmountMoreThanDue;
+import splitwise.splitwise.exception.SettlementNotFound;
+import splitwise.splitwise.exception.UserNotFound;
 import splitwise.splitwise.model.ExpenseGroup;
 import splitwise.splitwise.model.Settlement;
 import splitwise.splitwise.model.User;
 import splitwise.splitwise.repository.ExpenseGroupRepository;
 import splitwise.splitwise.repository.SettlementRepository;
 import splitwise.splitwise.repository.UserRepository;
-
-import java.sql.Timestamp;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
 
 public class SettlementServiceTest {
 

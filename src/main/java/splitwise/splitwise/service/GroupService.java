@@ -1,17 +1,9 @@
 package splitwise.splitwise.service;
 
+import java.util.List;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import splitwise.splitwise.dto.GroupDetailsResponse;
-import splitwise.splitwise.dto.GroupMemberDTO;
-import splitwise.splitwise.exception.*;
-import splitwise.splitwise.model.*;
-import splitwise.splitwise.repository.*;
-
-import java.util.*;
-import java.util.stream.Collectors;
+import splitwise.splitwise.model.ExpenseGroup;
 
 
 
