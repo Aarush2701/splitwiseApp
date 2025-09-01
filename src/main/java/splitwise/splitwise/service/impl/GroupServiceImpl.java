@@ -75,7 +75,7 @@ public class GroupServiceImpl implements GroupService {
     // get group details
     @Override
     public GroupDetailsResponse getGroup(Long groupid){
-        log.debug("Fetching group details: groupId={}", groupid);
+        log.info("Fetching group details: groupId={}", groupid);
         ExpenseGroup group = groupRepository.findById(groupid)
                 .orElseThrow(()-> new GroupNotFound("Group not found"));
         List<GroupMember> groupMembers = groupMemberRepository.findById_Groupid(groupid);
@@ -181,7 +181,7 @@ public class GroupServiceImpl implements GroupService {
 
     @Override
     public List<ExpenseGroup> getGroupByUserId(Long userId){
-        log.debug("Fetching groups for userId={}", userId);
+        log.info("Fetching groups for userId={}", userId);
         if(!userRepository.existsById(userId)){
             throw new UserNotFound("User not found with ID " +userId);
         }

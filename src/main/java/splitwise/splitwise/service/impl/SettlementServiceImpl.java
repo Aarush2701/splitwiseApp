@@ -75,7 +75,7 @@ public class SettlementServiceImpl implements SettlementService {
     //get settlement in a group by groupid
     @Override
     public List<Settlement> getSettlementsByGroup(Long groupid) {
-        log.debug("Fetching settlements for groupId={}", groupid);
+        log.info("Fetching settlements for groupId={}", groupid);
         ExpenseGroup group = groupRepository.findById(groupid)
                 .orElseThrow(() -> new GroupNotFound("Group not found"));
         return settlementRepository.findByGroupid_Groupid(groupid);
@@ -84,7 +84,7 @@ public class SettlementServiceImpl implements SettlementService {
     // get settelements made by a user
     @Override
     public List<Settlement> getSettlementsPaidByUser(Long groupid, Long userid){
-        log.debug("Fetching settlements paid by user: groupId={}, userId={}", groupid, userid);
+        log.info("Fetching settlements paid by user: groupId={}, userId={}", groupid, userid);
         ExpenseGroup group = groupRepository.findById(groupid)
                 .orElseThrow(() -> new GroupNotFound("Group not found"));
         User paidby = userRepository.findById(userid)
@@ -96,7 +96,7 @@ public class SettlementServiceImpl implements SettlementService {
     // get settlement made to a user
     @Override
     public List<Settlement> getSettlementsPaidToUser(Long groupid, Long userid){
-        log.debug("Fetching settlements paid to user: groupId={}, userId={}", groupid, userid);
+        log.info("Fetching settlements paid to user: groupId={}, userId={}", groupid, userid);
         ExpenseGroup group = groupRepository.findById(groupid)
                 .orElseThrow(() -> new GroupNotFound("Group not found"));
         User paidto  = userRepository.findById(userid)

@@ -70,7 +70,7 @@ public class ExpenseServiceImpl implements ExpenseService {
                 })
                 .toList();
 
-        // Save expense
+        // Save expense  TODO create a function for creating expense
         Expense expense = new Expense();
         expense.setAmount(request.getAmount());
         expense.setDescription(request.getDescription());
@@ -79,7 +79,7 @@ public class ExpenseServiceImpl implements ExpenseService {
         expense.setExpensedate(new java.sql.Timestamp(System.currentTimeMillis()));
 
         Expense savedExpense = expenseRepository.save(expense);
-        log.debug("Saved expense with id={}", savedExpense.getExpenseid());
+        log.info("Saved expense with id={}", savedExpense.getExpenseid());
 
         // strategy call
         SplitStrategy strategy = splitStrategyFactory.getStrategy(request.getSplitType());
@@ -99,7 +99,7 @@ public class ExpenseServiceImpl implements ExpenseService {
     //Get all expenses in a group
     @Override
     public List<Expense> getExpensesByGroup(Long groupid) {
-        log.debug("Fetching expenses for groupId={}", groupid);
+        log.info("Fetching expenses for groupId={}", groupid);
         ExpenseGroup group = groupRepository.findById(groupid)
                 .orElseThrow(() -> new GroupNotFound("Group not found"));
         return expenseRepository.findByGroupid_Groupid(groupid);
@@ -109,7 +109,7 @@ public class ExpenseServiceImpl implements ExpenseService {
 
     @Override
     public List<Expense> getExpensesByGroupAndUser(Long groupid, Long userid) {
-        log.debug("Fetching expenses for groupId={} by userId={}", groupid, userid);
+        log.info("Fetching expenses for groupId={} by userId={}", groupid, userid);
         ExpenseGroup group = groupRepository.findById(groupid)
                 .orElseThrow(() -> new GroupNotFound("Group not found"));
         User payer = userRepository.findById(userid)
@@ -122,7 +122,7 @@ public class ExpenseServiceImpl implements ExpenseService {
 
     @Override
     public List<String> getBalances(Long groupid) {
-        log.debug("Computing balances for groupId={}", groupid);
+        log.info("Computing balances for groupId={}", groupid);
         List<Expense> expenses = expenseRepository.findByGroupid_Groupid(groupid);
         List<Settlement> settlements = settlementRepository.findByGroupid_Groupid(groupid);
 
@@ -156,7 +156,7 @@ public class ExpenseServiceImpl implements ExpenseService {
 
     // Step 2: Subtract settlements
     public void applySettlements(Map<Long,Map<Long,Double>> balanceMap,List<Settlement> settlements) {
-        log.debug("Applying {} settlements", settlements.size());
+        log.info("Applying {} settlements", settlements.size());
         for (Settlement settlement : settlements) {
             Long from = settlement.getPaidby().getUserid();
             Long to = settlement.getPaidto().getUserid();
@@ -246,7 +246,7 @@ public class ExpenseServiceImpl implements ExpenseService {
     // get balance for a specific user in a group (balance controller)
     @Override
     public List<String> getUserBalance(Long groupid, Long userid){
-        log.debug("Computing user balance: groupId={}, userId={}", groupid, userid);
+        log.info("Computing user balance: groupId={}, userId={}", groupid, userid);
         List<String> allBalances = getBalances(groupid);
         String username = userRepository.findById(userid)
                 .orElseThrow(() -> new UserNotFound("User not found")).getUsername();
@@ -263,7 +263,7 @@ public class ExpenseServiceImpl implements ExpenseService {
     //balance between 2 users
     @Override
     public double getBalanceBetweenUsers(Long groupId , Long user1Id , Long user2Id){
-        log.debug("Computing balance between users: groupId={}, user1Id={}, user2Id={}", groupId, user1Id, user2Id);
+        log.info("Computing balance between users: groupId={}, user1Id={}, user2Id={}", groupId, user1Id, user2Id);
         List<String> balances = getBalances(groupId);
 
         String user1Touser2Prefix = getUsername(user1Id) + " owes " + getUsername(user2Id) + " ₹";
@@ -332,9 +332,10 @@ public class ExpenseServiceImpl implements ExpenseService {
                 })
                 .toList();
 
-        // Update fields
+        // Update fields  TODO create a function for updating expense
         existingExpense.setAmount(request.getAmount());
         existingExpense.setDescription(request.getDescription());
+        existingExpense.setGroupid(group);
         existingExpense.setUserid(payer);
         existingExpense.setExpensedate(new java.sql.Timestamp(System.currentTimeMillis()));
 
@@ -343,7 +344,7 @@ public class ExpenseServiceImpl implements ExpenseService {
 
         // Save updated expense
         Expense updatedExpense = expenseRepository.save(existingExpense);
-        log.debug("Updated expense saved: expenseId={}", updatedExpense.getExpenseid());
+        log.info("Updated expense saved: expenseId={}", updatedExpense.getExpenseid());
 
         // Recalculate and save new splits
         SplitStrategy strategy = splitStrategyFactory.getStrategy(request.getSplitType());
@@ -362,7 +363,7 @@ public class ExpenseServiceImpl implements ExpenseService {
 
     @Override
     public Expense getExpenseByGroupAndId(Long groupid, Long expenseid) {
-        log.debug("Fetching expense by id: groupId={}, expenseId={}", groupid, expenseid);
+        log.info("Fetching expense by id: groupId={}, expenseId={}", groupid, expenseid);
         Expense expense = expenseRepository.findById(expenseid)
                 .orElseThrow(() -> new ExpenseNotFound("Expense not found"));
 
@@ -375,7 +376,7 @@ public class ExpenseServiceImpl implements ExpenseService {
 
     @Override
     public List<ExpenseSplitResponse> getExpenseSplitsByGroupAndExpenseId(Long groupid, Long expenseid) {
-        log.debug("Fetching expense splits: groupId={}, expenseId={}", groupid, expenseid);
+        log.info("Fetching expense splits: groupId={}, expenseId={}", groupid, expenseid);
         Expense expense = expenseRepository.findById(expenseid)
                 .orElseThrow(() -> new ExpenseNotFound("Expense not found"));
 

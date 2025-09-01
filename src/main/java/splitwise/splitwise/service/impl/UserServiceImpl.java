@@ -102,7 +102,7 @@ public class UserServiceImpl implements UserService {
     // Get user by ID
     @Override
     public Optional<User> getUserById(Long userId){
-        log.debug("Fetching user by id: userId={}", userId);
+        log.info("Fetching user by id: userId={}", userId);
         userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFound("user not found"));
         return userRepository.findById(userId);
@@ -110,7 +110,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<Long> resolveUserIds(List<String> emails) {
-        log.debug("Resolving user ids for emails: count={}", emails.size());
+        log.info("Resolving user ids for emails: count={}", emails.size());
         List<User> users = userRepository.findByEmailIn(emails);
 
         List<String> foundEmails = users.stream()

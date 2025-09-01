@@ -1,5 +1,6 @@
 package splitwise.splitwise.strategy.impl;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import splitwise.splitwise.exception.ExactAmountSum;
 import splitwise.splitwise.exception.ParticipantCountMismatch;
@@ -10,12 +11,13 @@ import splitwise.splitwise.strategy.SplitStrategy;
 import java.util.ArrayList;
 import java.util.List;
 
-
+@Slf4j
 public class ExactSplitStrategy implements SplitStrategy {
 
     @Override
     public List<ExpenseSplit> calculateSplits(Expense expense, Long paidById , List<Long> participantsIds, List<Double> exactAmounts) {
 
+        log.info("Calculating Exact splits for Expense ID: {}, Paid by User ID: {}",expense.getExpenseid(),paidById);
         if (participantsIds.size() != exactAmounts.size()){
             throw new ParticipantCountMismatch("Participants and exact amount count mismatch.");
         }
@@ -29,8 +31,11 @@ public class ExactSplitStrategy implements SplitStrategy {
         for (int i = 0; i< participantsIds.size();i++){
             if (!participantsIds.get(i).equals(expense.getUserid().getUserid())){
                 splits.add(new ExpenseSplit(expense.getExpenseid(), participantsIds.get(i),exactAmounts.get(i)));
+                log.info("Assigned amount {} to User ID: {} for Expense ID: {}",exactAmounts.get(i),participantsIds.get(i),expense.getExpenseid());
             }
         }
+        log.info("Split calculation completed for Expense ID: {}, Total splits created: {}",
+                expense.getExpenseid(),splits.size());
         return splits;
     }
 }
