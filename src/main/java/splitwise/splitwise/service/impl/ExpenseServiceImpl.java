@@ -71,12 +71,7 @@ public class ExpenseServiceImpl implements ExpenseService {
                 .toList();
 
         // Save expense  TODO create a function for creating expense
-        Expense expense = new Expense();
-        expense.setAmount(request.getAmount());
-        expense.setDescription(request.getDescription());
-        expense.setGroupid(group);
-        expense.setUserid(payer);
-        expense.setExpensedate(new java.sql.Timestamp(System.currentTimeMillis()));
+        Expense expense = buildExpense(request,group,payer,null);
 
         Expense savedExpense = expenseRepository.save(expense);
         log.info("Saved expense with id={}", savedExpense.getExpenseid());
@@ -333,17 +328,13 @@ public class ExpenseServiceImpl implements ExpenseService {
                 .toList();
 
         // Update fields  TODO create a function for updating expense
-        existingExpense.setAmount(request.getAmount());
-        existingExpense.setDescription(request.getDescription());
-        existingExpense.setGroupid(group);
-        existingExpense.setUserid(payer);
-        existingExpense.setExpensedate(new java.sql.Timestamp(System.currentTimeMillis()));
+        Expense updateExpense = buildExpense(request,group,payer,existingExpense);
 
         // Delete old splits
         splitRepository.deleteByExpenseid(existingExpense.getExpenseid());
 
         // Save updated expense
-        Expense updatedExpense = expenseRepository.save(existingExpense);
+        Expense updatedExpense = expenseRepository.save(updateExpense);
         log.info("Updated expense saved: expenseId={}", updatedExpense.getExpenseid());
 
         // Recalculate and save new splits
@@ -393,6 +384,18 @@ public class ExpenseServiceImpl implements ExpenseService {
                     return new ExpenseSplitResponse(user.getUsername(), split.getAmount());
                 })
                 .collect(Collectors.toList());
+    }
+
+    private Expense buildExpense(AddExpenseRequest request,ExpenseGroup group, User payer,Expense existingExpense) {
+        Expense expense = (existingExpense != null) ? existingExpense : new Expense();
+
+        expense.setAmount(request.getAmount());
+        expense.setDescription(request.getDescription());
+        expense.setGroupid(group);
+        expense.setUserid(payer);
+        expense.setExpensedate(new java.sql.Timestamp(System.currentTimeMillis()));
+
+        return expense;
     }
 
 }

@@ -6,6 +6,8 @@ import splitwise.splitwise.model.Expense;
 import splitwise.splitwise.model.ExpenseSplit;
 import splitwise.splitwise.strategy.SplitStrategy;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,13 +23,18 @@ public class EqualSplitStrategy implements SplitStrategy {
 
         for (Long userId : participantsIds) {
             if (!userId.equals(paidById)){
-                splits.add(new ExpenseSplit(expense.getExpenseid(),userId,share));
-                log.info("Assigned share {} to User ID: {} for Expense ID: {}",share,userId,expense.getExpenseid());
+                double roundedShare = roundToOneDecimal(share);
+                splits.add(new ExpenseSplit(expense.getExpenseid(),userId,roundedShare));
+                log.info("Assigned share {} to User ID: {} for Expense ID: {}",roundedShare,userId,expense.getExpenseid());
             }
         }
         log.info("Split calculation completed for Expense ID: {}, Total splits created: {}",
                 expense.getExpenseid(),splits.size());
         return splits;
+    }
+
+    private double roundToOneDecimal(double value){
+        return BigDecimal.valueOf(value).setScale(1, RoundingMode.HALF_UP).doubleValue();
     }
 }
 
